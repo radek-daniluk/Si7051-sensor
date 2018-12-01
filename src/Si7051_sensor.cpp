@@ -9,22 +9,49 @@ void Si7051_sensor::begin(uint32_t clock) {
   Wire.setClock(clock);
 }
 
-uint8_t Si7051_sensor::measure() {
+uint8_t Si7051_sensor::measure(bool check_crc) {
   Wire.beginTransmission(I2C_ADDRESS);
   Wire.write(I2C_CMD_READ_TEMP_HMM);  // hold master mode
   uint8_t err = Wire.endTransmission(false); // returns errors values: 0 to 4
   if(err) {
     return err;
   }else {
+    uint8_t data_length;
+    if(check_crc){
+      data_length = 3;
+    }else {
+      data_length = 2;
+    }
     DEBUGLN("Si7051_sensor::measure() - before requestFrom()");
-    Wire.requestFrom(I2C_ADDRESS, (uint8_t)3);
+    Wire.requestFrom(I2C_ADDRESS, data_length);
     DEBUGLN("Si7051_sensor::measure() - after requestFrom()");
     Wire.available();
     temp_code = Wire.read()<<8|Wire.read(); // read 16-bit temperature code
-    Serial.print(temp_code); Serial.print(" CRC="); Serial.println(Wire.read(), HEX);
+
+    if ( check_crc && checkTempCRC( Wire.read() ) ) {
+      return 5; // incorrect CRC error
+    }
   }
   return err;
 }
+
+uint8_t Si7051_sensor::checkTempCRC(const uint8_t crc) {
+  Serial.print(temp_code, HEX); Serial.print(" CRC="); Serial.println(crc, HEX);
+
+  uint16_t temp_code_crc = temp_code;
+  uint8_t* const msb = (uint8_t*)&temp_code_crc + 1; // set pointer to MS byte
+  for (uint8_t i = 0; i < 16; i++) {
+    if (( *msb & 0x80 ) != 0 ) {
+      temp_code_crc <<= 1;
+      *msb ^= 0x31;
+    }else{
+      temp_code_crc <<= 1;
+    }
+  }
+  Serial.print(temp_code_crc, HEX); Serial.print("<-temp_code_crc *msb->"); Serial.println(*msb, HEX);
+  return crc != *msb;
+}
+
 
 uint8_t Si7051_sensor::reset() {
   Wire.beginTransmission(I2C_ADDRESS);
@@ -47,7 +74,7 @@ float Si7051_sensor::readCelsius() {
 }
 
 uint8_t Si7051_sensor::readCelsius(float* temperature) {
-  uint8_t err = measure();
+  uint8_t err = measure(1);
   if(err) {
     DEBUG("ERROR in Si7051_sensor::readCelsius: Read temperature I2C error=");DEBUGLN(err);
     return err;

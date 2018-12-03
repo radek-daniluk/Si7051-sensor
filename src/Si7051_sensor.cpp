@@ -1,9 +1,6 @@
 #include <Si7051_sensor.h>
 #include <Arduino.h>
 
-//TODO replace delay with AVR sleep states
-// add equal delays between temp. readings in measurLoop
-
 void Si7051_sensor::begin(uint32_t clock) {
   begin();
   Wire.setClock(clock);
@@ -63,7 +60,6 @@ uint8_t Si7051_sensor::measure(bool check_crc) {
       data_length = 2;
     }
     Wire.requestFrom(I2C_ADDRESS, data_length);
-    Wire.available();
     temp_code = Wire.read()<<8|Wire.read(); // read 16-bit temperature code
 
     if ( check_crc && checkTempCRC( Wire.read() ) ) {
@@ -75,7 +71,7 @@ uint8_t Si7051_sensor::measure(bool check_crc) {
 
 uint8_t Si7051_sensor::reset() {
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(I2C_RESET);
+  Wire.write(I2C_CMD_RESET);
   return Wire.endTransmission();
 }
 

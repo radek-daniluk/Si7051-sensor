@@ -13,7 +13,7 @@ void setup() {
 void loop() {
   Serial.print("No err handling - Temperature in Celsius deg.: ");
   Serial.println(si7051.readCelsius());
-  delay(200);
+  delay(500);
 
   float temperature;
   uint8_t error_number = si7051.readCelsius(&temperature);

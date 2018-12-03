@@ -11,12 +11,28 @@ void setup() {
 }
 
 void loop() {
+  //firmware revision read
+  float firmware_rev;
+  uint8_t error_number = si7051.readFirmwareRev(&firmware_rev);
+  if(error_number) {
+    printErrorMsg(error_number);
+  }else {
+    Serial.print("Si7051 Firmaware revision: ");
+    if(firmware_rev == -1.0f) {
+      Serial.println("unknown");
+    }else {
+      Serial.println(firmware_rev, 1);
+    }
+  }
+
+  // Simplest temperature measurement without error handling
   Serial.print("No err handling - Temperature in Celsius deg.: ");
   Serial.println(si7051.readCelsius());
   delay(500);
 
+  // Simple temperature measurement with error handgling
   float temperature;
-  uint8_t error_number = si7051.readCelsius(&temperature);
+  error_number = si7051.readCelsius(&temperature);
   if (error_number) {
     printErrorMsg(error_number);
   }else {
@@ -25,6 +41,8 @@ void loop() {
   }
   delay(500);
 
+  // Two step temperature measurement.
+  // You have several (max 11) miliseconds before temperate is ready to read.
   error_number = si7051.beginMeasure();
   if (error_number) {
     printErrorMsg(error_number);
@@ -42,7 +60,7 @@ void loop() {
 }
 
 void printErrorMsg(uint8_t error_number) {
-  Serial.print("Error ");Serial.print(error_number);Serial.print(" occured: ");
+  Serial.print("Error ");Serial.print(error_number);Serial.print(": ");
   switch(error_number) {
     case 1: Serial.println("data too long to fit in transmit buffer"); break;
     case 2: Serial.println("received NACK on transmit of address"); break;

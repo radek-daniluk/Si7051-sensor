@@ -1,7 +1,7 @@
 #include <Si7051_sensor.h>
 #include <Arduino.h>
 
-void Si7051_sensor::begin(uint32_t clock) {
+void Si7051_sensor::begin(const uint32_t clock) {
   begin();
   Wire.setClock(clock);
 }
@@ -11,7 +11,7 @@ float Si7051_sensor::readCelsius() {
   return TEMP_CONV_CONSTANT*temp_code+TEMP_CONV_ADD;
 }
 
-uint8_t Si7051_sensor::readCelsius(float* temperature) {
+uint8_t Si7051_sensor::readCelsius(float* const temperature) {
   uint8_t err = measure(true);
   if(err) {
     DEBUG("ERROR in Si7051_sensor::readCelsius: Read temperature I2C error=");DEBUGLN(err);
@@ -27,7 +27,7 @@ uint8_t Si7051_sensor::beginMeasure() {
     return Wire.endTransmission();
 }
 
-uint8_t Si7051_sensor::getResultCelsius(float* temperature, bool check_crc) {
+uint8_t Si7051_sensor::getResultCelsius(float* const temperature, const bool check_crc) {
   uint8_t data_length;
   if(check_crc){
     data_length = 3;
@@ -46,7 +46,7 @@ uint8_t Si7051_sensor::getResultCelsius(float* temperature, bool check_crc) {
   return 0;
 }
 
-uint8_t Si7051_sensor::measure(bool check_crc) {
+uint8_t Si7051_sensor::measure(const bool check_crc) {
   Wire.beginTransmission(I2C_ADDRESS);
   Wire.write(I2C_CMD_READ_TEMP_HMM);
   uint8_t err = Wire.endTransmission(false);
@@ -71,8 +71,35 @@ uint8_t Si7051_sensor::measure(bool check_crc) {
 
 uint8_t Si7051_sensor::reset() {
   Wire.beginTransmission(I2C_ADDRESS);
-  Wire.write(I2C_CMD_RESET);
+  Wire.write(0xFE);
   return Wire.endTransmission();
+}
+
+uint8_t Si7051_sensor::readFirmwareRevCode(uint8_t* const firmware_rev_code) {
+  Wire.beginTransmission(I2C_ADDRESS);
+	Wire.write(0x84);
+	Wire.write(0xB8);
+  uint8_t err = Wire.endTransmission();
+	if(err) {
+    return err;
+  }
+	Wire.requestFrom(I2C_ADDRESS, (uint8_t)1);
+	*firmware_rev_code = Wire.read();
+  return err;
+}
+
+uint8_t Si7051_sensor::readFirmwareRev(float* const firmware_rev) {
+  uint8_t firmware_rev_code, err;
+  err = readFirmwareRevCode(&firmware_rev_code);
+  if(err) {
+    return err;
+  }
+  switch (firmware_rev_code) {
+    case 0xFF: *firmware_rev = 1.0f; break;
+    case 0x20: *firmware_rev = 2.0f; break;
+    default:  *firmware_rev = -1.0f; break; // unknown
+  }
+  return err;
 }
 
 /* ************************************

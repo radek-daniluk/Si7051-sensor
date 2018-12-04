@@ -20,7 +20,7 @@ public:
   void begin(){Wire.begin();}
   /*
   Begin Wire and set clock */
-  void begin(const uint32_t);
+  void begin(uint32_t);
   /*
   Perform a measurement in hold master mode and return temperature
   in Celsius degrees. This is the simplest way to obtain temperature. */
@@ -39,7 +39,7 @@ public:
   If result is not ready function getResultCelsius() will return SI7051_NOT_READY_ERR
   Note if you call getResultCelsius() without beginMeasure() the function will
   return last correctly obtained temperature value */
-  uint8_t getResultCelsius(float* const temperature, const bool check_crc=0);
+  uint8_t getResultCelsius(float* const temperature, bool check_crc=0);
   /*
   Send soft reset command to Si7051 */
   uint8_t reset();
@@ -49,10 +49,13 @@ public:
   /*
   Read firmaware revision as float number e.g. 2.0 */
   uint8_t readFirmwareRev(float* const);
+  /*
+  Read 64-bits (8-bytes) long Si7051 Electrnic ID (serial number) */
+  uint8_t readEID(uint8_t* const, bool check_crc=1);
 protected:
   /*
   Perform a measurment in hold master mode and store 16-bit result in temp_code */
-  uint8_t measure(const bool check_crc=0);
+  uint8_t measure(bool check_crc=0);
   /* 16-bit temperature code returned by Si7051 */
   uint16_t temp_code;
   /* Constant addition for Celsius conversion formulas */
@@ -63,6 +66,9 @@ private:
   static const uint8_t I2C_CMD_READ_TEMP_NHMM = 0XF3;// no hold master mode
   // Constant used to convert temperature to Celcius degrees. Formula from Si7051 datasheet.
   const float TEMP_CONV_CONSTANT =  0.0026812744140625f; // 175.72/65536;
-  uint8_t checkTempCRC(const uint8_t);
+  uint8_t crc8(uint8_t, uint8_t);
+  uint8_t checkTempCRC(uint8_t);
+  uint8_t send2byteCmd(uint8_t, uint8_t);
+  uint8_t get4bytesEID(uint8_t* const, bool, bool check_crc=1);
 };
 #endif // SI7051_SENSOR_H

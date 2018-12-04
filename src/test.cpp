@@ -7,7 +7,7 @@ Si7051_sensor si7051;
 
 void setup() {
   Serial.begin(115200);
-  si7051.begin(400000);
+  si7051.begin(100000);
 }
 
 void loop() {
@@ -56,6 +56,19 @@ void loop() {
     }
   }
 
+  delay(500);
+
+  uint8_t EID[8];
+  error_number = si7051.readEID(EID);
+  if (error_number) {
+    printErrorMsg(error_number);
+  }else {
+    Serial.print("Electronic ID (serial number): ");
+    for(uint8_t i=0; i<8; i++) {
+      Serial.print(EID[i], HEX);Serial.print(" ");
+    }
+    Serial.println();
+  }
   delay(1000);
 }
 
